@@ -1,0 +1,30 @@
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+
+    strategy:
+      matrix:
+        version:
+          - "3.0"
+
+    permissions:
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - run: echo "${{secrets.GITHUB_TOKEN}}" | podman login -u "${{github.actor}}" --password-stdin ghcr.io
+
+      - run: podman build --no-cache --build-arg=VERSION="${{matrix.version}}" -t "ghcr.io/qikp0/openazl:${{matrix.version}}" .
+
+      - run: podman push "ghcr.io/qikp0/openazl:${{matrix.version}}"
+        if: github.event_name != 'pull_request'
